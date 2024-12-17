@@ -614,7 +614,7 @@ class Plotter():
 
         
 if __name__ == "__main__":
-    plotter = Plotter("/home/users/coelho/ray_results/run_2024-12-12_09-47-31")
+    plotter = Plotter("path_to_ray_results_folder")
     plotter.load_run(gradients = False)
 
     params_0 = [

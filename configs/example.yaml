@@ -1,11 +1,11 @@
-ray_local_mode: False
-num_cpus:       24
-num_gpus:       0
-method:         QuantumKernels
-ray_logging_path: logs/make_class
-ray_num_trial_samples:  10
-type:                   train
-num_cpus_worker:        2
+ray_local_mode: False                 # set to true for debugging
+num_cpus:       24                    # number of cpus to use
+num_gpus:       0                     # number of gpus to use
+method:         QuantumKernels        # name of method: use default one
+ray_logging_path: logs/make_class     # path for logging (deprecated)
+ray_num_trial_samples:  10            # number of samples with different seeds per hyperparameter configuration
+type:                   train         # type (use train)
+num_cpus_worker:        2             # number of cpus per worker
 
 algorithm_config:
   dataset:          checkerboard      # dataset to use: checkerboard,corners,donuts,spirals
