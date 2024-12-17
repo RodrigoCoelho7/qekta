@@ -1,1 +1,3 @@
-# qekta
+# QEKTA: Quantum Efficient Kernel Target Alignment
+
+This repo provides the code for implementing trainable quantum embedding kernels using the Nyström Approximation method (or not). This allows for efficient quantum kernel implementations that scale only linearly with the training dataset size ```N``` in its entire pipeline, from training to the generation of the training kernel matrix that is fed to the SVM.

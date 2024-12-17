@@ -1,0 +1,48 @@
+ray_local_mode: False
+num_cpus:       24
+num_gpus:       0
+method:         QuantumKernels
+ray_logging_path: logs/make_class
+ray_num_trial_samples:  1
+
+algorithm_config:
+  dataset:          #checkerboard
+    - grid_search
+    - string
+    - [checkerboard, donuts]
+  num_samples:      30
+  num_features:     2
+  feature_scaling:  none
+  full_kta:         False
+  subsample_size:   8
+  lr:               #0.1
+    - grid_search
+    - float
+    - [0.01,0.1]
+  num_epochs:       500
+  num_layers:       #5
+    - grid_search
+    - int
+    - [1,5]
+  num_qubits_equal_num_features:  False
+  num_batches_per_epoch: 1
+  use_importance_sampling:  False
+  ansatz:           hwe
+  num_qubits:       #2
+    - grid_search
+    - int
+    - [2,5]
+  use_input_scaling:  #False
+    - grid_search
+    - bool
+    - [True, False]
+  use_data_reuploading:
+    - grid_search
+    - bool
+    - [True, False]
+
+
+
+  # 1440 * 3 runs
+
+

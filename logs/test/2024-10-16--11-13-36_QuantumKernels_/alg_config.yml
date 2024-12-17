@@ -1,0 +1,28 @@
+ray_local_mode: False
+num_cpus:       24
+num_gpus:       0
+method:         QuantumKernels
+ray_logging_path: logs/test
+ray_num_trial_samples:  1
+
+algorithm_config:
+  dataset:          ls
+  num_samples:      50
+  num_features:     2
+  feature_scaling:  pi/2
+  subsample_size:   12
+  fixed_subsamples:  False
+  lr:               #0.2
+    - grid_search
+    - float
+    - [0.001,0.01,0.1,0.2]
+  num_epochs:       500
+  num_batches_per_epoch: 1
+  num_layers:       5
+  num_qubits_equal_num_features:  True
+  ansatz:           hwe
+  num_qubits:       4
+
+  # 1440 * 3 runs
+
+
