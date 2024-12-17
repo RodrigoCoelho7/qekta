@@ -10,6 +10,7 @@ import numpy as np
 import random
 import ray
 import copy
+import os
 
 costs = {
     "trace_kta": kta,
@@ -28,41 +29,25 @@ def run(config):
     lr = config["lr"]
     feature_scaling = config["feature_scaling"]
     num_qubits_equal_num_features = config["num_qubits_equal_num_features"]
-    num_batches_per_epoch = config["num_batches_per_epoch"]
     full_kta = config["full_kta"]
     cost_function = config["cost_function"]
     use_nystrom_approx = config["use_nystrom_approx"]
     validate_every_epoch = config["validate_every_epoch"]
-    num_sampled_batches = config["num_sampled_batches"]
-    method_for_batch_picking = config["method_for_batch_picking"]
 
     if num_qubits_equal_num_features:
         num_qubits = num_features
     else:
         num_qubits = config["num_qubits"]
 
-    # Load the correct dataset
-    if config["dataset"] == "make_classification":
-        x,y = make_classification(n_samples = num_samples,n_features = num_features,
-                                  n_informative = num_features, n_redundant = 0)
-        num_points_test = int(0.2 * len(x))
-        num_samples = num_samples - num_points_test
-    elif config["dataset"] == "tc" or config["dataset"] == "ls" or config["dataset"] == "hm":
-        dataset_npy = np.load("/home/users/coelho/quantum_kernels/efficient_kta/datasets/final_datasets.npy", allow_pickle=True).item()
-        x_train = dataset_npy[config["dataset"]][num_features][num_samples]["x_train"]
-        y_train = dataset_npy[config["dataset"]][num_features][num_samples]["y_train"]
-        x_test = dataset_npy[config["dataset"]][num_features][num_samples]["x_test"]
-        y_test = dataset_npy[config["dataset"]][num_features][num_samples]["y_test"]
-        num_points_test = x_test.shape[0]
-        x = np.concatenate((x_train,x_test))
-        y = np.concatenate((y_train,y_test))
-    elif config["dataset"] == "checkerboard" or config["dataset"] == "donuts" or config["dataset"] == "sine":
+    relative_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "datasets")
+
+    if config["dataset"] == "checkerboard" or config["dataset"] == "donuts" or config["dataset"] == "sine":
         if config["dataset"] == "checkerboard":
-            dataset_npy = np.load("/home/users/coelho/quantum_kernels/efficient_kta/datasets/checkerboard_dataset.npy", allow_pickle=True).item()
+            dataset_npy = np.load(os.path.join(relative_path, "checkerboard_dataset.npy"), allow_pickle=True).item()
         elif config["dataset"] == "donuts":
-            dataset_npy = np.load("/home/users/coelho/quantum_kernels/efficient_kta/datasets/donuts.npy", allow_pickle=True).item()
+            dataset_npy = np.load(os.path.join(relative_path, "donuts.npy"), allow_pickle=True).item()
         elif config["dataset"] == "sine":
-            dataset_npy = np.load("/home/users/coelho/quantum_kernels/efficient_kta/datasets/small_sine_dataset.npy", allow_pickle=True).item()
+            dataset_npy = np.load(os.path.join(relative_path, "small_sine_dataset.npy"), allow_pickle=True).item()
 
         x_train = dataset_npy["x_train"]
         y_train = dataset_npy["y_train"]
@@ -72,27 +57,11 @@ def run(config):
         x = np.concatenate((x_train,x_test))
         y = np.concatenate((y_train,y_test))
 
-    elif config["dataset"] == "make_variable":
-        dataset_npy = np.load("/home/users/coelho/quantum_kernels/efficient_kta/datasets/make_variable.npy", allow_pickle=True).item()
-
-        x_train = dataset_npy[num_samples][num_features]["x_train"]
-        x_test = dataset_npy[num_samples][num_features]["x_test"]
-        y_train = dataset_npy[num_samples][num_features]["y_train"]
-        y_test = dataset_npy[num_samples][num_features]["y_test"]
-        num_points_test = x_test.shape[0]
-        x = np.concatenate((x_train,x_test))
-        y = np.concatenate((y_train,y_test))
-    elif config["dataset"] == "donuts_variable" or config["dataset"] == "checkers_variable" or config["dataset"] == "concentric_circles" or config["dataset"] == "spirals" or config["dataset"] == "corners":
-        if config["dataset"] == "donuts_variable":
-            dataset_npy = np.load("/home/users/coelho/quantum_kernels/efficient_kta/datasets/donuts_variable.npy", allow_pickle=True).item()
-        elif config["dataset"] == "checkers_variable":
-            dataset_npy = np.load("/home/users/coelho/quantum_kernels/efficient_kta/datasets/checkers_variable.npy", allow_pickle=True).item()
-        elif config["dataset"] == "concentric_circles":
-            dataset_npy = np.load("/home/users/coelho/quantum_kernels/efficient_kta/datasets/concentric_circles.npy", allow_pickle=True).item()
-        elif config["dataset"] == "spirals":
-            dataset_npy = np.load("/home/users/coelho/quantum_kernels/efficient_kta/datasets/spirals.npy", allow_pickle=True).item()
+    elif config["dataset"] == "spirals" or config["dataset"] == "corners":
+        if config["dataset"] == "spirals":
+            dataset_npy = np.load(os.path.join(relative_path, "spirals.npy"), allow_pickle=True).item()
         elif config["dataset"] == "corners":
-            dataset_npy = np.load("/home/users/coelho/quantum_kernels/efficient_kta/datasets/corners.npy", allow_pickle=True).item()
+            dataset_npy = np.load(os.path.join(relative_path, "corners.npy"), allow_pickle=True).item()
 
         x_train = dataset_npy[num_samples]["x_train"]
         x_test = dataset_npy[num_samples]["x_test"]
@@ -267,52 +236,7 @@ def run(config):
             if full_kta:
                 x_batch,y_batch = torch.Tensor(x_train), torch.Tensor(y_train)
             else:
-                # Pick N random batches
-                if method_for_batch_picking != "random":
-                    for i in range(num_sampled_batches):
-                        x_batch, y_batch = random.choice(list(train_loader))
-                        x_batches.append(x_batch)
-                        y_batches.append(y_batch)
-
-                        # Evaluate each of the batches and fill the loss list
-                        with torch.no_grad():
-                            x_0 = x_batch.repeat(x_batch.shape[0],1)
-                            x_1 = x_batch.repeat_interleave(x_batch.shape[0], dim=0)
-                            output = model(x_0,x_1).to(torch.float32)
-                            loss = - costs[cost_function](output.reshape(x_batch.shape[0],x_batch.shape[0]),y_batch)
-                            losses.append(loss)
-                    
-                    if method_for_batch_picking == "lowest":
-                        index = np.argmax(losses)
-                    if method_for_batch_picking == "highest":
-                        index = np.argmin(losses)
-                    if method_for_batch_picking == "prob_lowest":
-                        losses = np.abs(losses)
-                        inverted_losses = [1.0 / loss for loss in losses]
-                        total = sum(inverted_losses)
-                        probabilities = [x / total for x in inverted_losses]                        
-                        index = np.random.choice(len(losses), p=probabilities)
-                    elif method_for_batch_picking == "prob_highest":
-                        losses = np.abs(losses)
-                        total = sum(losses)
-                        probabilities = [loss / total for loss in losses]
-                        index = np.random.choice(len(losses), p=probabilities)
-                    elif method_for_batch_picking == "curriculum":
-                        losses = np.abs(losses)
-                        inverted_losses = [1.0 / loss for loss in losses]
-                        difficulty_factor = idx / num_epochs
-                        blended_losses = [(1 - difficulty_factor) * inv + difficulty_factor * loss
-                                          for inv, loss in zip(inverted_losses, losses)]
-                        total = sum(blended_losses)
-                        probabilities = [x / total for x in blended_losses]
-                        index = np.random.choice(len(losses), p=probabilities)
-                    
-                    x_batch = x_batches[index]
-                    y_batch = y_batches[index]
-
-                # Based on the method pick pick one of the batches    
-                elif method_for_batch_picking == "random":
-                    x_batch, y_batch = random.choice(list(train_loader))
+                x_batch, y_batch = random.choice(list(train_loader))
 
                 idx +=1
                 opt.zero_grad()

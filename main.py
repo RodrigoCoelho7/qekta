@@ -14,7 +14,7 @@ from training_functions.gradient import get_gradient
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = "This parser receives the yaml config file")
-    parser.add_argument("--config", default = "configs/03.12.2024/curriculum_initial_tests/tc_4.yaml")
+    parser.add_argument("--config", default = "configs/test.yaml")
     args = parser.parse_args()
 
     with open(args.config) as f:
@@ -25,7 +25,7 @@ if __name__ == "__main__":
     ray.init(local_mode = config.ray_local_mode,
              num_cpus = config.num_cpus,
              num_gpus=config.num_gpus,
-             _temp_dir=os.path.dirname(os.path.dirname(os.getcwd())) + '/coelho/' + 'ray_logs',
+             _temp_dir=os.path.dirname(os.getcwd()) + '/ray_logs',
              include_dashboard = False)
     
     param_space = create_config(config)
@@ -51,7 +51,7 @@ if __name__ == "__main__":
             trainable,
             tune_config=tune.TuneConfig(num_samples=config.ray_num_trial_samples,
                                         trial_dirname_creator=trial_name_creator),
-            param_space=param_space,)
+            param_space=param_space)
         
     tuner.fit()
     ray.shutdown()
